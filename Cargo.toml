@@ -1,0 +1,8 @@
+[package]
+name = "agh-suu-differential-dataflow"
+version = "0.1.0"
+authors = ["Tomasz Kasprzycki", "Bartlomiej Stepien", "Michal Sledz"]
+edition = "2018"
+
+[dependencies]
+differential-dataflow = "0.11.0"
