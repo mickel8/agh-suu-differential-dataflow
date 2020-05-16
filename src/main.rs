@@ -16,5 +16,12 @@ fn main() {
         for (u, v) in edges {
             input.insert((u, v));
         }
+
+        input.advance_to(1);
+
+        input.insert((2, 4));
+        input.insert((4, 2));
+        input.remove((2, 3));
+        input.remove((3, 2));
     }).expect("Computation terminated abnormally");
 }
