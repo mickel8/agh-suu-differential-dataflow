@@ -1,9 +1,4 @@
-extern crate differential_dataflow;
-extern crate timely;
-
-pub use crate::algorithms::graph::triangles;
-
-mod algorithms;
+use agh_suu_differential_dataflow::algorithms::graph::triangles;
 
 fn main() {
     timely::execute_from_args(std::env::args(), move |worker| {

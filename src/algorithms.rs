@@ -1,7 +1,3 @@
-extern crate differential_dataflow;
-extern crate timely;
-
-
 pub mod graph {
     use differential_dataflow::input::InputSession;
     use differential_dataflow::operators::{Join, Threshold};
