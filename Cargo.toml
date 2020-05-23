@@ -7,3 +7,7 @@ edition = "2018"
 [dependencies]
 differential-dataflow = "0.11.0"
 timely = "0.11.1"
+
+[[bin]]
+name = "agh-suu-dd"
+path = "src/bin/main.rs"
