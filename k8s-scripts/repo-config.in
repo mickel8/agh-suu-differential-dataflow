@@ -1,3 +1,4 @@
 <docker-id>
 <repo-name>
 <repo-tag>
+<use-secret(y/n)>

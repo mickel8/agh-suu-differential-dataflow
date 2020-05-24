@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rust-app-pod
+spec:
+  containers:
+    - name: agh-suu-dd
+      image: ${DOCKERHUB_ID}/${DOCKERHUB_REPO}:${DOCKERHUB_REPO_TAG}
+      resources:
+        requests:
+          cpu: 100m
+          memory: 100Mi
+  imagePullSecrets:
+    - name: regcred
+  restartPolicy: Never
