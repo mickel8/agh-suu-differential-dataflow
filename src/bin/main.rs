@@ -1,10 +1,10 @@
 use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
-use std::fs;
 use agh_suu_differential_dataflow::algorithms::graph::triangles;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    println!("Server started! Waiting on port 7878");
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
@@ -20,13 +20,12 @@ fn handle_connection(mut stream: TcpStream) {
 
     let (status_line, filename) = if buffer.starts_with(get) {
         compute(); // TODO: pass data from request and return results to response
-        ("HTTP/1.1 200 OK\r\n\r\n", "html/hello.html")
+        ("HTTP/1.1 200 OK\r\n\r\n", "Hello")
     } else {
-        ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "html/404.html")
+        ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "Not found")
     };
 
-    let contents = fs::read_to_string(filename).unwrap();
-    let response = format!("{}{}", status_line, contents);
+    let response = format!("{}{}", status_line, filename);
 
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
