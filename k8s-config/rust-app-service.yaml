@@ -6,7 +6,7 @@ metadata:
     app: agh-suu-dd
     tier: rust-app
 spec:
-  type: LoadBalancer
+  type: NodePort
   ports:
     - port: 7878
   selector:
