@@ -1,4 +1,4 @@
 /target
 .idea
 /k8s-config/kaniko-pod.yaml
-/k8s-config/app-pod.yaml
+/k8s-config/app-deployment.yaml

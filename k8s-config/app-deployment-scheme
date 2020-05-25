@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
       - name: agh-suu-dd
-        image: bartekbartlomiej/agh-suu-dd:v0.0.1
+        image: ${DOCKERHUB_ID}/${DOCKERHUB_REPO}:${DOCKERHUB_REPO_TAG}
         imagePullPolicy: Always
         resources:
           requests:

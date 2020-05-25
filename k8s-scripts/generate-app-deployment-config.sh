@@ -1,5 +1,5 @@
 #!/bin/bash
-FILE=app-pod
+FILE=app-deployment
 SCHEME=$FILE-scheme
 DIR=k8s-config
 SCHEME_PATH=$DIR/$SCHEME
@@ -22,5 +22,5 @@ sed -e "s/\${DOCKERHUB_ID}/$DOCKERHUB_ID/" \
 
 if [[ $USE_SECRET =~ ^[Nn]$ ]]
 then
-  sed -i '13,14d' $FILE_PATH
+  sed -i '29,30d' $FILE_PATH
 fi
