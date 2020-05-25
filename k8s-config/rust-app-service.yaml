@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rust-app-server
+  labels:
+    app: agh-suu-dd
+    tier: rust-app
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 7878
+  selector:
+    app: agh-suu-dd
+    tier: rust-app

@@ -8,7 +8,7 @@ spec:
     - name: kaniko
       image: gcr.io/kaniko-project/executor:v0.22.0
       args:
-        - "--context=git://github.com/mickel8/agh-suu-differential-dataflow.git#refs/heads/k8s-installation"
+        - "--context=git://github.com/mickel8/agh-suu-differential-dataflow.git#refs/heads/server-test"
         - "--destination=${DOCKERHUB_ID}/${DOCKERHUB_REPO}:${DOCKERHUB_REPO_TAG}"
       volumeMounts:
         - name: kaniko-secret

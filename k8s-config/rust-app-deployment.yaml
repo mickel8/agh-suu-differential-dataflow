@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rust-app
+  labels:
+    app: agh-suu-dd
+spec:
+  selector:
+    matchLabels:
+      app: agh-suu-dd
+      tier: rust-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: agh-suu-dd
+        tier: rust-app
+    spec:
+      containers:
+      - name: agh-suu-dd
+        image: bartekbartlomiej/agh-suu-dd:v0.0.1
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+          - containerPort: 7878
+      imagePullSecrets:
+        - name: regcred
