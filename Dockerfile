@@ -21,8 +21,8 @@ RUN rm -rf target/debug/deps/*agh_suu_differential_dataflow* && \
  cargo install --debug --path .
 
 FROM debian:stable-slim
+
 COPY --from=builder /usr/local/cargo/bin/agh-suu-dd /usr/local/bin/agh-suu-dd
-COPY hostfile.txt .
 RUN mkdir /etc/agh-suu-dd
 
 CMD ["agh-suu-dd"]

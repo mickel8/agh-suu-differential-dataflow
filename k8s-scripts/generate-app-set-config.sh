@@ -37,5 +37,5 @@ sed -e "s/\${DOCKERHUB_ID}/$DOCKERHUB_ID/" \
 
 if [[ $USE_SECRET =~ ^[Nn]$ ]]
 then
-  sed -i '52,53d' $FILE_PATH
+  sed -i '56,57d' $FILE_PATH
 fi

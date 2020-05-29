@@ -12,7 +12,7 @@ fn main() {
     let args = vec!["-w".to_owned(), "1".to_owned(),
                     "-n".to_owned(), processes.to_owned(),
                     "-p".to_owned(), proc_id.to_owned(),
-                    "-h".to_owned(), "hostfile.txt".to_owned()].into_iter();
+                    "-h".to_owned(), "/etc/agh-suu-dd/hostfile.cnf".to_owned()].into_iter();
 
     timely::execute_from_args(args, move |worker| {
         let (mut input, probe) = triangles(worker);
