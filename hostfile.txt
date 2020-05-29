@@ -1,0 +1,8 @@
+rust-app-0.rust-app.default.svc.cluster.local:2101
+rust-app-1.rust-app.default.svc.cluster.local:2101
+rust-app-2.rust-app.default.svc.cluster.local:2101
+rust-app-3.rust-app.default.svc.cluster.local:2101
+rust-app-4.rust-app.default.svc.cluster.local:2101
+rust-app-5.rust-app.default.svc.cluster.local:2101
+rust-app-6.rust-app.default.svc.cluster.local:2101
+rust-app-7.rust-app.default.svc.cluster.local:2101

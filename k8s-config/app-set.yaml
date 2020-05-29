@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rust-app
+spec:
+  selector:
+    matchLabels:
+      app: rust-app
+  serviceName: rust-app
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        app: rust-app
+    spec:
+      initContainers:
+      - name: init-rust-app
+        image: debian:stable-slim
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          echo $ordinal > /mnt/agh-suu-dd/proc-id.cnf
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/agh-suu-dd
+      containers:
+      - name: agh-suu-dd
+        image: bartekbartlomiej/agh-suu-dd:latest
+        imagePullPolicy: Never
+        env:
+        - name: AGH_SUU_DD_CLUSTER_SIZE
+          value: "4"
+        ports:
+        - name: rust-app-cls
+          containerPort: 2101
+        - name: rust-app
+          containerPort: 7878
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/agh-suu-dd
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+      - name: conf
+        emptyDir: {}

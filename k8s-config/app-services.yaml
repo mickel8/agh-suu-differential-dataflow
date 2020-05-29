@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rust-app
+  labels:
+    app: rust-app
+spec:
+  ports:
+  - name: rust-app
+    port: 7878
+  clusterIP: None
+  selector:
+    app: rust-app
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: rust-app
+#   labels:
+#     app: rust-app
+# spec:
+#   ports:
+#   - name: rust-app
+#     port: 7878
+#   selector:
+#     app: rust-app
