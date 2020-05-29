@@ -7,7 +7,7 @@ spec:
     matchLabels:
       app: rust-app
   serviceName: rust-app
-  replicas: 4
+  replicas: ${CLUSTER_SIZE}
   template:
     metadata:
       labels:
@@ -29,11 +29,11 @@ spec:
           mountPath: /mnt/agh-suu-dd
       containers:
       - name: agh-suu-dd
-        image: bartekbartlomiej/agh-suu-dd:latest
-        imagePullPolicy: Never
+        image: ${DOCKERHUB_ID}/${DOCKERHUB_REPO}:${DOCKERHUB_REPO_TAG}
+        imagePullPolicy: ${IMAGE_PULL_POLICY}
         env:
         - name: AGH_SUU_DD_CLUSTER_SIZE
-          value: "4"
+          value: "${CLUSTER_SIZE}"
         ports:
         - name: rust-app-cls
           containerPort: 2101
@@ -49,3 +49,5 @@ spec:
       volumes:
       - name: conf
         emptyDir: {}
+      imagePullSecrets:
+        - name: regcred

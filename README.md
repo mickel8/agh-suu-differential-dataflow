@@ -1,6 +1,6 @@
 # Installation instructions
 
-## Step 1: Create application's docker image
+## Step 1 Option 1: Create application's docker image with kaniko
 Image of application is created by [kaniko](https://github.com/GoogleContainerTools/kaniko/) tool.
 
 ### Prerequisites
@@ -61,12 +61,41 @@ rm k8s-config/kaniko-pod.yaml
 kubectl delete secret/regcred
 ```
 
+### App configuration
+
+When generating the cluster yaml, choose **Always** for the `imagePullPolicy`.
+
+## Step 1 Option 2: Create application's docker image manually
+Image of application is created by minikube's Docker deamon.
+
+### Prerequisites
+* A Kubernetes Cluster (tested on [Minikube](https://kubernetes.io/docs/setup/minikube/))
+* [Docker](https://hub.docker.com/) installation.
+
+### Switch Docker environment to minikube's
+Change shell's Docker environment by sourcing minikube's configuration.
+
+```shell script
+eval $(minikube docker-env)
+```
+
+### Build the image
+
+```shell script
+docker build -t <repository name>:<tag> .
+```
+Project's dependencies are downloaded and compiled only on the first build. Every subsequent build is going to use the cached layer with deps compiled.
+
+### App configuration
+
+When generating the cluster yaml, choose **Never** for the `imagePullPolicy`.
+
 ## Step 2: Run application
 For now, app can be run from pod. (Deployment will be added in future)
 
 ### Prerequisites
 * A Kubernetes Cluster (tested on [Minikube](https://kubernetes.io/docs/setup/minikube/))
-* The published image of application (done in the previous step)
+* The published image of application (done in the previous step) or the local image
 
 ### Generate App pod configuration
 To create file `/k8s-config/rust-app-pod.yaml`, use:
@@ -74,36 +103,38 @@ To create file `/k8s-config/rust-app-pod.yaml`, use:
 ./k8s-scripts/generate-app-pod-config.sh
 ```
 
-You will be prompted for repository path info, that is: `<dockerID>/<repository name>:<tag>`
-and usage of secret (needed for private repos. A secret from the previous step will be used then.)
+You will be prompted for repository path info, that is: `<dockerID>/<repository name>:<tag>` usage of secret (needed for private repos. A secret from the previous step will be used then.) and `imagePullPolicy` depending what way you have chosen to build the image.
 Again, you can modify and use `repo-config.in`:
 ```shell script
-./k8s-scripts/generate-app-pod-config.sh < k8s-scripts/repo-config.in
+./k8s-scripts/generate-app-set-config.sh < k8s-scripts/repo-config.in
 ```
 
 ### Run app
 To start, run:
 ```shell script
-kubectl create -f ./k8s-config/app-pod.yaml # file generated in the previous step
+kubectl create -f ./k8s-config/app-services.yaml
+kubectl create -f ./k8s-config/app-set.yaml # file generated in the previous step
 ```
 
 #### Show results
 You can access the result of Rust program in logs:
 ```shell script
-export POD_NAME=$(kubectl get pods -o go-template --template '{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}')
-kubectl logs $POD_NAME
+kubectl describe ./k8s-config/app-set.yaml
+kubectl get pods -l app=rust-app
+kubectl logs -f rust-app-0
+...
 ```
-It should be:
+It should be similar to:
 ```
-((1, 2, 3), 0, 1)
-((1, 2, 3), 1, -1)
-((1, 2, 4), 1, 1)
-((7, 8, 9), 0, 1)
+Process-ID: 0; Cluster size: 7
+End computation
+Sleep
 ```
 
 ### Clean up 
 Run:
 ```shell script
-kubectl delete -f ./k8s-config/app-pod.yaml
-rm /k8s-config/app-pod.yaml
+kubectl delete -f ./k8s-config/app-set.yaml
+kubectl delete -f ./k8s-config/app-services.yaml
+rm /k8s-config/app-set.yaml
 ```
