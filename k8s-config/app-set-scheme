@@ -41,7 +41,7 @@ spec:
         ports:
         - name: rust-app-cls
           containerPort: 2101
-        - name: rust-app
+        - name: rust-app-server
           containerPort: 7878
         volumeMounts:
         - name: conf
