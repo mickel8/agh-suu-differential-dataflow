@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 differential-dataflow = "0.11.0"
 timely = "0.11.1"
+rand = "0.7.3"
