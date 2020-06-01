@@ -1,2 +1,4 @@
 /target
 .idea
+/k8s-config/kaniko-pod.yaml
+/k8s-config/app-set.yaml

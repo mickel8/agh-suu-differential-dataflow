@@ -1,0 +1,12 @@
+# for creating a persistent volume claim which will mounted in the kaniko container
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dockerfile-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+  storageClassName: local-storage

@@ -1,0 +1,6 @@
+<docker-id>
+<repo-name>
+<repo-tag>
+<use-secret(y/n)>
+<image-pull-policy(a/n)>
+<cluster-size>

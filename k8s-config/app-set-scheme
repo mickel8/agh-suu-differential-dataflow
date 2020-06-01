@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rust-app
+spec:
+  selector:
+    matchLabels:
+      app: rust-app
+  serviceName: rust-app
+  replicas: ${CLUSTER_SIZE}
+  template:
+    metadata:
+      labels:
+        app: rust-app
+    spec:
+      initContainers:
+      - name: init-rust-app
+        image: debian:stable-slim
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          echo $ordinal > /mnt/agh-suu-dd/proc-id.cnf
+          for i in $(seq 0 ${CLUSTER_SIZE}); do
+            echo "rust-app-$i.rust-app.default.svc.cluster.local:2101" >> \
+             /mnt/agh-suu-dd/hostfile.cnf
+          done
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/agh-suu-dd
+      containers:
+      - name: agh-suu-dd
+        image: ${DOCKERHUB_ID}/${DOCKERHUB_REPO}:${DOCKERHUB_REPO_TAG}
+        imagePullPolicy: ${IMAGE_PULL_POLICY}
+        env:
+        - name: AGH_SUU_DD_CLUSTER_SIZE
+          value: "${CLUSTER_SIZE}"
+        ports:
+        - name: rust-app-cls
+          containerPort: 2101
+        - name: rust-app-server
+          containerPort: 7878
+        volumeMounts:
+        - name: conf
+          mountPath: /etc/agh-suu-dd
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+      - name: conf
+        emptyDir: {}
+      imagePullSecrets:
+        - name: regcred
