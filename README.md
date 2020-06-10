@@ -1,6 +1,31 @@
 # Installation instructions
 
-## Step 1 Option 1: Create application's docker image with kaniko
+## Step 1 Option 1: Create application's docker image manually
+Image of application is created by minikube's Docker deamon.
+
+### Prerequisites
+* A Kubernetes Cluster (tested on [Minikube](https://kubernetes.io/docs/setup/minikube/))
+* [Docker](https://hub.docker.com/) installation.
+
+### Switch Docker environment to minikube's
+Change shell's Docker environment by sourcing minikube's configuration.
+
+```shell script
+eval $(minikube docker-env)
+```
+
+### Build the image
+
+```shell script
+docker build -t <repository name>:<tag> .
+```
+Project's dependencies are downloaded and compiled only on the first build. Every subsequent build is going to use the cached layer with deps compiled.
+
+### App configuration
+
+When generating the cluster yaml, choose **Never** for the `imagePullPolicy`.
+
+## Step 1 Option 2: Create application's docker image with kaniko
 Image of application is created by [kaniko](https://github.com/GoogleContainerTools/kaniko/) tool.
 
 ### Prerequisites
@@ -65,31 +90,6 @@ kubectl delete secret/regcred
 
 When generating the cluster yaml, choose **Always** for the `imagePullPolicy`.
 
-## Step 1 Option 2: Create application's docker image manually
-Image of application is created by minikube's Docker deamon.
-
-### Prerequisites
-* A Kubernetes Cluster (tested on [Minikube](https://kubernetes.io/docs/setup/minikube/))
-* [Docker](https://hub.docker.com/) installation.
-
-### Switch Docker environment to minikube's
-Change shell's Docker environment by sourcing minikube's configuration.
-
-```shell script
-eval $(minikube docker-env)
-```
-
-### Build the image
-
-```shell script
-docker build -t <repository name>:<tag> .
-```
-Project's dependencies are downloaded and compiled only on the first build. Every subsequent build is going to use the cached layer with deps compiled.
-
-### App configuration
-
-When generating the cluster yaml, choose **Never** for the `imagePullPolicy`.
-
 ## Step 2: Run application
 For now, app can be run from pod. (Deployment will be added in future)
 
@@ -97,10 +97,10 @@ For now, app can be run from pod. (Deployment will be added in future)
 * A Kubernetes Cluster (tested on [Minikube](https://kubernetes.io/docs/setup/minikube/))
 * The published image of application (done in the previous step) or the local image
 
-### Generate App pod configuration
-To create file `/k8s-config/rust-app-pod.yaml`, use:
+### Generate App set configuration
+To create file `/k8s-config/rust-app-set.yaml`, use:
 ```shell script
-./k8s-scripts/generate-app-pod-config.sh
+./k8s-scripts/generate-app-set-config.sh
 ```
 
 You will be prompted for repository path info, that is: `<dockerID>/<repository name>:<tag>` usage of secret (needed for private repos. A secret from the previous step will be used then.) and `imagePullPolicy` depending what way you have chosen to build the image.
