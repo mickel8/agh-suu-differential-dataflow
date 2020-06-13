@@ -10,6 +10,8 @@ use timely::communication::allocator::generic::Generic;
 use timely::worker::Worker;
 
 use agh_suu_differential_dataflow::algorithms::graph::triangles;
+use timely::dataflow::operators::probe::Handle;
+use agh_suu_differential_dataflow::Msg;
 
 fn main() {
     let proc_id = fs::read_to_string("/etc/agh-suu-dd/proc-id.cnf").unwrap().trim_end().to_owned();
@@ -22,14 +24,14 @@ fn main() {
                     "-h".to_owned(), "/etc/agh-suu-dd/hostfile.cnf".to_owned()].into_iter();
 
     timely::execute_from_args(args, move |worker| {
-        let mut input = triangles(worker);
+        let (mut input, probe) = triangles(worker);
         let listener = TcpListener::bind("0.0.0.0:7878").unwrap();
-        println!("Server started! Waiting on port 7878");
+        println!("Server started on worker {}! Waiting on port 7878", worker.index());
 
         for stream in listener.incoming() {
             let stream = stream.unwrap();
-            println!("Received a request");
-            handle_connection(stream, &input, worker)
+            println!("Received a new connection");
+            handle_connection(stream, &mut input, &probe, worker)
         }
 
         println!("End computation");
@@ -40,35 +42,51 @@ fn main() {
     thread::sleep(Duration::from_millis(100000));
 }
 
-fn handle_connection(mut stream: TcpStream, input: &InputSession<i32, (i32, i32), isize>, worker: &Worker<Generic>) {
-    let mut buffer = [0; 512];
-    stream.read(&mut buffer).unwrap();
-
-    let get = b"GET / HTTP/1.1\r\n";
-
-    let (status_line, filename) = if buffer.starts_with(get) {
-        let result = compute(buffer, input, worker);
-        if result {
-            ("HTTP/1.1 200 OK\r\n\r\n", "Hello")
-        } else {
-            ("HTTP/1.1 400 BAD REQUEST\r\n\r\n", "Bad request")
+fn handle_connection(
+    mut stream: TcpStream,
+    input: &mut InputSession<i32, (i32, i32), isize>,
+    probe: &Handle<i32>,
+    worker: &mut Worker<Generic>,
+) {
+    println!("Waiting for msg");
+    loop {
+        let mut buffer = [0; 512];
+        let bytes = stream.read(&mut buffer).unwrap();
+        let mut index= 1;
+        while index < bytes {
+            let size: u8 = bincode::deserialize(&buffer[index - 1..index]).unwrap();
+            let msg: Msg = bincode::deserialize(&buffer[index..(index + size as usize)]).unwrap();
+            println!("Got msg: {}", msg);
+            compute(msg, input, probe, worker);
+            index += size as usize + 1;
         }
-    } else {
-        ("HTTP/1.1 404 NOT FOUND\r\n\r\n", "Not found")
-    };
-
-    let response = format!("{}{}", status_line, filename);
-
-    stream.write(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+        stream.flush().unwrap();
+    }
 }
 
-fn compute(buffer: [u8; 512], input: &InputSession<i32, (i32, i32), isize>, worker: &Worker<Generic>) -> bool {
-    // let message = parse(buffer)
-    // input.update_at(message.data, message.time, message.diff);
-    // let time = message.low_watermark();
-    // input.advance_to(time);
-    // input.flush();
-    // worker.step();
-    true
+fn compute(
+    msg: Msg,
+    input: &mut InputSession<i32, (i32, i32), isize>,
+    probe: &Handle<i32>,
+    worker: &mut Worker<Generic>,
+) {
+    match msg {
+        Msg::Add(edge, time) => {
+            input.advance_to(time);
+            input.insert(edge);
+            input.flush();
+        },
+        Msg::Remove(edge, time) => {
+            input.advance_to(time);
+            input.remove(edge);
+            input.flush();
+        },
+        Msg::Result(time) => {
+            input.advance_to(time);
+            input.flush();
+            while probe.less_than(&input.time()) {
+                worker.step();
+            }
+        },
+    }
 }

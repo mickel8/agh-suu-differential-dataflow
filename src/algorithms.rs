@@ -2,18 +2,21 @@ pub mod graph {
     use differential_dataflow::input::InputSession;
     use differential_dataflow::operators::{Join, Threshold};
     use timely::communication::allocator::generic::Generic;
+    use timely::dataflow::operators::probe::Handle;
     use timely::worker::Worker;
 
     fn sort_tuple(tuple: (i32, i32, i32)) -> (i32, i32, i32) {
-        let mut as_vec: Vec<i32> = vec!(tuple.0, tuple.1, tuple.2);
+        let mut as_vec: Vec<i32> = vec![tuple.0, tuple.1, tuple.2];
         as_vec.sort();
         (as_vec[0], as_vec[1], as_vec[2])
     }
 
-    pub fn triangles(worker: &mut Worker<Generic>) -> InputSession<i32, (i32, i32), isize> {
+    pub fn triangles(
+        worker: &mut Worker<Generic>,
+    ) -> (InputSession<i32, (i32, i32), isize>, Handle<i32>) {
         let mut input: InputSession<i32, (i32, i32), isize> = InputSession::new();
 
-        worker.dataflow(|scope| {
+        let probe = worker.dataflow(|scope| {
             let edges = input.to_collection(scope);
 
             edges
@@ -23,8 +26,9 @@ pub mod graph {
                 .semijoin(&edges)
                 .map(|((x, z), y)| sort_tuple((x, y, z)))
                 .distinct()
-                .inspect(|x| println!("{:?}", x));
+                .inspect(|x| println!("{:?}", x))
+                .probe()
         });
-        input
+        (input, probe)
     }
 }
