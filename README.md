@@ -26,6 +26,7 @@ kaniko needs to know where to push image. Use:
 ```
 to produce `k8s-config/kaniko-pod.yaml`, containing information of repository.
 You will be prompted for repository path info, that is: `<dockerID>/<repository name>:<tag>`.
+Note that `tag` name should correspond to branch name which will be used to build image. 
 
 You can also modify `k8s-scripts/repo-config.in` and pass it to script:
 ```shell script
@@ -115,15 +116,29 @@ kubectl create -f ./k8s-config/app-services.yaml
 kubectl create -f ./k8s-config/app-set.yaml # file generated in the previous step
 ```
 
-#### Using app (WIP)
+#### Using app
 Obtain IP address by typing:
 ```shell script
-minikube service rust-app-server --url
-curl <IP address from the command above> 
+minikube service rust-app-server --url 
 ```
-You should get response:
+
+Use client code for communication:
+```shell script
+cargo run --bin client <ip_address_obtained_in_previous_step>
+# e.g.
+cargo run --bin client 127.0.0.1:7878
 ```
-Hello
+After running client you will be able to pass messages e.g.:
+```
+(op) (vertex1) (vertex2) (time)
++    1         2         0
+```
+Available options are:
+```
++ (v1) (v2) (time)  # adds edge
+- (v1) (v2) (time)  # removes edge
+= (time)            # calculates result
+f (path_to_file)    # reads above commands from file
 ```
 
 You can access the result of Rust program in logs:
@@ -135,9 +150,11 @@ kubectl logs -f rust-app-0
 ```
 It should be similar to:
 ```
-Process-ID: 0; Cluster size: 4
-Server started! Waiting on port 7878
-Received a request
+Process-ID: 1; Cluster size: 4
+Server started on worker 1! Waiting on port 7878
+Received a new connection
+Waiting for msg
+Got msg: Add 1 2 time: 0
 ```
 
 ### Clean up 
