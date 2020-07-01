@@ -135,10 +135,11 @@ After running client you will be able to pass messages e.g.:
 ```
 Available options are:
 ```
-+ (v1) (v2) (time)  # adds edge
-- (v1) (v2) (time)  # removes edge
-= (time)            # calculates result
-f (path_to_file)    # reads above commands from file
++ (v1) (v2) (time)              # adds edge
+- (v1) (v2) (time)              # removes edge
+= (time)                        # calculates result
+f (path_to_file) (batch size)   # reads above commands from file and
+                                # sends them in batches 
 ```
 
 You can access the result of Rust program in logs:
