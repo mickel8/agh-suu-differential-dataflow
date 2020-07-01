@@ -1,7 +1,7 @@
 use std::env;
 use std::fs;
 use std::io::prelude::*;
-use std::net::{TcpListener, TcpStream};
+use std::net::{TcpListener, TcpStream, Shutdown};
 use std::thread;
 use std::time::Duration;
 
@@ -52,6 +52,11 @@ fn handle_connection(
     loop {
         let mut buffer = [0; 512];
         let bytes = stream.read(&mut buffer).unwrap();
+        if bytes == 0 {
+            println!("Connection closed");
+            stream.shutdown(Shutdown::Both).unwrap();
+            break;
+        }
         let mut index= 1;
         while index < bytes {
             let size: u8 = bincode::deserialize(&buffer[index - 1..index]).unwrap();
