@@ -8,7 +8,8 @@ pub type Time = i32;
 pub enum Msg {
     Add(Edge, Time),
     Remove(Edge, Time),
-    Result(Time)
+    Result(Time),
+    Measure()
 }
 
 impl fmt::Display for Msg {
@@ -23,6 +24,9 @@ impl fmt::Display for Msg {
             }
             Msg::Result(time) => {
                 out = format!("Result time: {}", time);
+            },
+            Msg::Measure() => {
+                out = String::from("Measure execution time")
             }
         }
         write!(f, "{}", out)

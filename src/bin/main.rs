@@ -93,5 +93,8 @@ fn compute(
                 worker.step();
             }
         },
+        Msg::Measure() => {
+            println!("{:?}", worker.timer().elapsed());
+        }
     }
 }

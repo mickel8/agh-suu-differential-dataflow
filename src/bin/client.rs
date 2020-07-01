@@ -43,14 +43,16 @@ fn parse(msg: Vec<&str>) -> Msg {
     let op = msg.get(0).unwrap();
     if *op == "=" {
         Msg::Result(msg.get(1).unwrap().parse().unwrap())
-    } else if *op =="+" {
+    } else if *op == "+" {
         let (edge, time) = parse_op_args(msg);
         Msg::Add(edge, time)
     } else if *op == "-" {
         let (edge, time) = parse_op_args(msg);
         Msg::Remove(edge, time)
+    } else if *op == "m" {
+        Msg::Measure()
     } else {
-        panic!("Unknown operation. Allowed: +, -, =, f");
+        panic!("Unknown operation. Allowed: +, -, =, f, m");
     }
  }
 
