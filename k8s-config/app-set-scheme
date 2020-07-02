@@ -38,6 +38,8 @@ spec:
         env:
         - name: AGH_SUU_DD_CLUSTER_SIZE
           value: "${CLUSTER_SIZE}"
+        - name: AGH_SUU_DD_WORKERS_PER_NODE
+          value: "${WORKERS_PER_NODE}"
         ports:
         - name: rust-app-cls
           containerPort: 2101
