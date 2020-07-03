@@ -20,6 +20,7 @@ import java.util.stream.LongStream;
 public class CommandsGenerator {
 
     private static final String DATASET = "twitter-2010";
+    private static final int PERCENT = 1;
 
     public static void main(String[] args) throws JSAPException {
         SimpleJSAP jsap = new SimpleJSAP(
@@ -60,11 +61,14 @@ public class CommandsGenerator {
 
     public static void generateGraphLoadCommands(ImmutableGraph graph, int time) {
         Path file = Path.of("load-graph.cmds");
-        long edgesQuantity = graph.numArcs();
+        long edgesQuantity = graph.numArcs() / 100 * PERCENT;
+
+        System.out.printf("Generating load-graph, %d edges%n", edgesQuantity);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             NodeIterator nodes = graph.nodeIterator();
             int nodeOrdinal;
+
             while ((nodeOrdinal = nodes.nextInt()) != -1 && edgesQuantity > 0) {
                 LazyIntIterator successors = nodes.successors();
                 int successorOrdinal;
@@ -75,6 +79,7 @@ public class CommandsGenerator {
 
                     edgesQuantity--;
                 }
+                System.out.printf("%d edges...%n", edgesQuantity);
             }
             writer.println(new Result(time + 1).format());
         } catch (IOException e) {
@@ -84,7 +89,9 @@ public class CommandsGenerator {
 
     public static void generateTestUpdateThroughputCommands(ImmutableGraph graph, int time) {
         Path file = Path.of("test-throughput.cmds");
-        long edgesQuantity = 1000000;
+        long edgesQuantity = 1000000 / 100 * PERCENT;
+
+        System.out.printf("Generating test-throughput, %d edges%n", edgesQuantity);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             writer.println(new Measure().format());
@@ -97,11 +104,14 @@ public class CommandsGenerator {
 
     public static void generateTestSnapshotRetrievalLatencyCommands(ImmutableGraph graph, int time) {
         Path file = Path.of("test-retrieval.cmds");
-        long edgesQuantity = 1000000;
+        long edgesQuantity = 1000000 / 100 * PERCENT;
+        int repetitions = 1000 / 100 * PERCENT;
+
+        System.out.printf("Generating test-throughput, %d edges%n", edgesQuantity * repetitions);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             writer.println(new Measure().format());
-            IntStream.range(0, 1000)
+            IntStream.range(0, repetitions)
                     .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, time));
             writer.println(new Result(time + 1).format());
             writer.println(new Measure().format());
@@ -112,20 +122,23 @@ public class CommandsGenerator {
 
     public static void generateTestPurelyStreamingAnalysisCommands(ImmutableGraph graph, int time) {
         Path file = Path.of("test-streaming.cmds");
-        long edgesQuantity = graph.numArcs() / 1000;
+        long edgesQuantity = (graph.numArcs() / 100 * PERCENT) / 1000;
 
-        int repetitions = 1000;
-        int intervals = 5;
-        int batch = repetitions / intervals;
+        int repetitions = 1000 / 100 * PERCENT;
+        int steps = 5;
+        int batch = repetitions / steps;
+
+        System.out.printf("Generating test-streaming, %d edges%n", edgesQuantity * repetitions);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             writer.println(new Measure().format());
-            IntStream.range(time, time + intervals)
-                    .forEach(next -> {
+            IntStream.range(0, steps)
+                    .forEach(step -> {
                         IntStream.range(0, batch)
-                                .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, next));
-                        writer.println(new Result(next + 1).format());
+                                .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, step + time));
+                        writer.println(new Result(step + time + 1).format());
                         writer.println(new Measure().format());
+                        System.out.printf("%d step...%n", step);
                     });
         } catch (IOException e) {
             e.printStackTrace();
