@@ -130,14 +130,13 @@ cargo run --bin client 127.0.0.1:7878
 ```
 After running client you will be able to pass messages e.g.:
 ```
-(op) (vertex1) (vertex2) (time)
-+    1         2         0
+(op) (vertex1) (vertex2)
++    1         2         
 ```
 Available options are:
 ```
-+ (v1) (v2) (time)              # adds edge
-- (v1) (v2) (time)              # removes edge
-= (time)                        # calculates result
++ (v1) (v2)                     # adds edge
+- (v1) (v2)                     # removes edge
 f (path_to_file) (batch size)   # reads above commands from file and
                                 # sends them in batches 
 ```
@@ -151,12 +150,21 @@ kubectl logs -f rust-app-0
 ```
 It should be similar to:
 ```
-Process-ID: 1; Cluster size: 4
-Server started on worker 1! Waiting on port 7878
+Process-ID: 0; Cluster size: 4
+Server started! Waiting on port 7878
+Worker 1 of process 0 started
+Worker 0 of process 0 started
+Worker 3 of process 0 started
+Worker 2 of process 0 started
 Received a new connection
-Waiting for msg
-Got msg: Add 1 2 time: 0
+Worker 0: Waiting for msg
+Worker 0: Got msg: Add 0 99732
 ```
+
+Each command or batch of commands in case of using `f` option
+is sent in one TCP connection so they will be passed to the same machine.
+Only commands from different TCP connections can be received by
+different machines.
 
 ### Clean up 
 Run:
