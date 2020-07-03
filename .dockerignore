@@ -1,5 +1,6 @@
 .idea/
 k8s-config/
+commands-generator/
 .gitignore
 README.md
 target/

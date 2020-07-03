@@ -1,0 +1,16 @@
+plugins {
+    id 'application'
+}
+
+group 'pl.edu.agh.suu'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'it.unimi.dsi:webgraph:3.6.3'
+}
+
+mainClassName = 'pl.edu.agh.suu.CommandsGenerator'
