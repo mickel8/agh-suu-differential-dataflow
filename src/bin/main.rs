@@ -74,6 +74,11 @@ fn handle_connection(
         let mut buffer = [0; 512];
         let bytes = stream.read(&mut buffer).unwrap();
         if bytes == 0 {
+            input.advance_to(input.time() + 1);
+            input.flush();
+            while probe.less_than(&input.time()) {
+                worker.step();
+            }
             println!("Worker {}: Connection closed", worker.index());
             stream.shutdown(Shutdown::Both).unwrap();
             break;
@@ -83,7 +88,7 @@ fn handle_connection(
             let size: u8 = bincode::deserialize(&buffer[index - 1..index]).unwrap();
             let msg: Msg = bincode::deserialize(&buffer[index..(index + size as usize)]).unwrap();
             println!("Worker {}: Got msg: {}", worker.index(), msg);
-            compute(msg, input, probe, worker);
+            compute(msg, input);
             index += size as usize + 1;
         }
         stream.flush().unwrap();
@@ -93,26 +98,15 @@ fn handle_connection(
 fn compute(
     msg: Msg,
     input: &mut InputSession<i32, (i32, i32), isize>,
-    probe: &Handle<i32>,
-    worker: &mut Worker<Generic>,
 ) {
     match msg {
-        Msg::Add(edge, time) => {
-            input.advance_to(time);
+        Msg::Add(edge) => {
             input.insert(edge);
             input.flush();
         },
-        Msg::Remove(edge, time) => {
-            input.advance_to(time);
+        Msg::Remove(edge) => {
             input.remove(edge);
             input.flush();
-        },
-        Msg::Result(time) => {
-            input.advance_to(time);
-            input.flush();
-            while probe.less_than(&input.time()) {
-                worker.step();
-            }
-        },
+        }
     }
 }

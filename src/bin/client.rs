@@ -1,13 +1,13 @@
 use std::io;
 use std::io::{Write, BufReader, BufRead};
 use std::net::{TcpStream, Shutdown};
-use agh_suu_differential_dataflow::{Msg, Edge, Time};
+use agh_suu_differential_dataflow::{Msg, Edge};
 use std::fs::File;
 
 fn main() {
     let server_addr = std::env::args().nth(1).unwrap();
     println!("Server address {}", server_addr);
-    println!("Type msg (op [v1 v2] time; e.g. + 1 2 0 or = 1): ");
+    println!("Type msg (op [v1 v2]; e.g. + 1 2): ");
 
     loop {
         let mut input = String::new();
@@ -41,24 +41,21 @@ fn main() {
 
 fn parse(msg: Vec<&str>) -> Msg {
     let op = msg.get(0).unwrap();
-    if *op == "=" {
-        Msg::Result(msg.get(1).unwrap().parse().unwrap())
-    } else if *op =="+" {
-        let (edge, time) = parse_op_args(msg);
-        Msg::Add(edge, time)
+    if *op =="+" {
+        let edge = parse_op_args(msg);
+        Msg::Add(edge)
     } else if *op == "-" {
-        let (edge, time) = parse_op_args(msg);
-        Msg::Remove(edge, time)
+        let edge = parse_op_args(msg);
+        Msg::Remove(edge)
     } else {
-        panic!("Unknown operation. Allowed: +, -, =, f");
+        panic!("Unknown operation. Allowed: +, -, f");
     }
  }
 
-fn parse_op_args(msg: Vec<&str>) -> (Edge, Time){
+fn parse_op_args(msg: Vec<&str>) -> Edge {
     let v1 = msg.get(1).unwrap().parse().unwrap();
     let v2 = msg.get(2).unwrap().parse().unwrap();
-    let time = msg.get(3).unwrap().parse().unwrap();
-    ((v1, v2), time)
+    (v1, v2)
 }
 
 fn send(server_addr: &String, msgs: Vec<Msg>) {
