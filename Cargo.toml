@@ -9,6 +9,7 @@ differential-dataflow = "0.11.0"
 timely = "0.11.1"
 bincode = "1.2.1"
 serde = { version = "1.0.112", features = ["derive"] }
+spmc = "0.3.0"
 
 [[bin]]
 name = "agh-suu-dd"

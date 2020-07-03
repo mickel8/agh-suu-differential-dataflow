@@ -19,6 +19,8 @@ read -n 1 -r IMAGE_PULL_POLICY
 echo
 echo -n 'Enter cluster size: '
 read CLUSTER_SIZE
+echo -n 'Enter number of workers per node: '
+read WORKERS_PER_NODE
 echo
 
 if [[ $IMAGE_PULL_POLICY =~ ^[Aa]$ ]]
@@ -33,9 +35,10 @@ sed -e "s/\${DOCKERHUB_ID}/$DOCKERHUB_ID/" \
   -e "s/\${DOCKERHUB_REPO_TAG}/$DOCKERHUB_REPO_TAG/" \
   -e "s/\${IMAGE_PULL_POLICY}/$IMAGE_PULL_POLICY/" \
   -e "s/\${CLUSTER_SIZE}/$CLUSTER_SIZE/" \
+  -e "s/\${WORKERS_PER_NODE}/$WORKERS_PER_NODE/" \
   $SCHEME_PATH > $FILE_PATH
 
 if [[ $USE_SECRET =~ ^[Nn]$ ]]
 then
-  sed -i '56,57d' $FILE_PATH
+  sed -i '58,59d' $FILE_PATH
 fi
