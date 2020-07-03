@@ -5,10 +5,17 @@ import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.LazyIntIterator;
 import it.unimi.dsi.webgraph.NodeIterator;
+import pl.edu.agh.suu.command.*;
 
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 public class CommandsGenerator {
 
@@ -16,29 +23,34 @@ public class CommandsGenerator {
 
     public static void main(String[] args) throws JSAPException {
         SimpleJSAP jsap = new SimpleJSAP(
-                "Twitter DataBroker",
-                "Access Twitter dataset files and print nodes with their successors",
+                "Commands Genarator for Tegra-like DD benchmarks",
+                "Access Twitter dataset files to generate benchmark commands",
                 new Parameter[] {
                         new FlaggedOption( "path", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'p', "path",
-                                "Path to dataset files." ),
+                                "Path to dataset files" ),
                 }
         );
 
         JSAPResult config = jsap.parse(args);
         if (jsap.messagePrinted()) {
-            System.exit( 1 );
+            System.exit(1);
         }
 
         Path path = Path.of(config.getString("path"), DATASET);
         try {
             generateOffsets(path);
-            printDD(path);
+            ImmutableGraph graph = ImmutableGraph.load(path.toString());
+
+            generateGraphLoadCommands(graph, 0);
+            generateTestUpdateThroughputCommands(graph, 1);
+            generateTestSnapshotRetrievalLatencyCommands(graph, 1);
+            generateTestPurelyStreamingAnalysisCommands(graph, 1);
+
         } catch (IOException | NoSuchMethodException | InstantiationException | InvocationTargetException |
                 JSAPException | IllegalAccessException | ClassNotFoundException e) {
             e.printStackTrace();
         }
     }
-
 
     public static void generateOffsets(Path path) throws IOException, IllegalAccessException, JSAPException,
             InstantiationException, NoSuchMethodException, InvocationTargetException, ClassNotFoundException {
@@ -46,35 +58,103 @@ public class CommandsGenerator {
         BVGraph.main(arguments);
     }
 
-    public static void printDD(Path path) throws IOException {
-        ImmutableGraph graph = ImmutableGraph.load(path.toString());
-        System.out.println(graph.numNodes());
+    public static void generateGraphLoadCommands(ImmutableGraph graph, int time) {
+        Path file = Path.of("load-graph.cmds");
+        long edgesQuantity = graph.numArcs();
 
-        NodeIterator nodes = graph.nodeIterator();
-        printNodes(nodes);
-    }
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
+            NodeIterator nodes = graph.nodeIterator();
+            int nodeOrdinal;
+            while ((nodeOrdinal = nodes.nextInt()) != -1 && edgesQuantity > 0) {
+                LazyIntIterator successors = nodes.successors();
+                int successorOrdinal;
+                while ((successorOrdinal = successors.nextInt()) != -1 && edgesQuantity > 0) {
 
-    public static void printNodes(NodeIterator nodes) {
-        int debugCounter = 100;
-        int nodeOrdinal;
-        while ((nodeOrdinal = nodes.nextInt()) != -1) {
-            System.out.println(nodeOrdinal);
-            LazyIntIterator successors = nodes.successors();
-            printSuccessors(successors, nodeOrdinal);
-            if ((debugCounter -= 1) == 0) {
-                break;
+                    Edge<Integer> edge = new Edge<>(nodeOrdinal, successorOrdinal);
+                    writer.println(new Add(edge, time).format());
+
+                    edgesQuantity--;
+                }
             }
+            writer.println(new Result(time + 1).format());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
-    public static void printSuccessors(LazyIntIterator successors, int nodeOrdinal) {
-        int debugCounter = 100;
-        int successorOrdinal;
-        while ((successorOrdinal = successors.nextInt()) != -1) {
-            System.out.println(String.format("%d %d", nodeOrdinal, successorOrdinal));
-            if ((debugCounter -= 1) == 0) {
-                break;
-            }
+    public static void generateTestUpdateThroughputCommands(ImmutableGraph graph, int time) {
+        Path file = Path.of("test-throughput.cmds");
+        long edgesQuantity = 1000000;
+
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
+            writer.println(new Measure().format());
+            generateAddRemoveCommands(writer, graph, edgesQuantity, time);
+            writer.println(new Measure().format());
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+
+    public static void generateTestSnapshotRetrievalLatencyCommands(ImmutableGraph graph, int time) {
+        Path file = Path.of("test-retrieval.cmds");
+        long edgesQuantity = 1000000;
+
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
+            writer.println(new Measure().format());
+            IntStream.range(0, 1000)
+                    .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, time));
+            writer.println(new Result(time + 1).format());
+            writer.println(new Measure().format());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void generateTestPurelyStreamingAnalysisCommands(ImmutableGraph graph, int time) {
+        Path file = Path.of("test-streaming.cmds");
+        long edgesQuantity = graph.numArcs() / 1000;
+
+        int repetitions = 1000;
+        int intervals = 5;
+        int batch = repetitions / intervals;
+
+        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
+            writer.println(new Measure().format());
+            IntStream.range(time, time + intervals)
+                    .forEach(next -> {
+                        IntStream.range(0, batch)
+                                .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, next));
+                        writer.println(new Result(next + 1).format());
+                        writer.println(new Measure().format());
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void generateAddRemoveCommands(PrintWriter writer, ImmutableGraph graph, long edgesQuantity, int time) {
+        List<Edge<Integer>> edges = generateRandomEdges(graph, edgesQuantity);
+        edges.stream()
+                .map(edge -> new Add(edge, time))
+                .map(Command::format)
+                .forEach(writer::println);
+        edges.stream()
+                .map(edge -> new Remove(edge, time))
+                .map(Command::format)
+                .forEach(writer::println);
+    }
+
+    public static List<Edge<Integer>> generateRandomEdges(ImmutableGraph graph, long quantity) {
+        Random generator = new Random();
+        int maxOrdinal = graph.numNodes();
+
+        return LongStream
+                .range(0, quantity)
+                .mapToObj(i -> {
+                    int to = generator.nextInt(maxOrdinal);
+                    int from = generator.nextInt(maxOrdinal);
+                    return new Edge<>(from, to);
+                })
+                .collect(Collectors.toList());
     }
 }
