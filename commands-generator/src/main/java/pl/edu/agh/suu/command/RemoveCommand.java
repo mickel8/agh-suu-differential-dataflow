@@ -2,11 +2,11 @@ package pl.edu.agh.suu.command;
 
 import pl.edu.agh.suu.Edge;
 
-public class Remove implements Command {
+public class RemoveCommand implements Command {
     public final Edge<Integer> edge;
     public final Integer time;
 
-    public Remove(Edge<Integer> edge, Integer time) {
+    public RemoveCommand(Edge<Integer> edge, Integer time) {
         this.edge = edge;
         this.time = time;
     }

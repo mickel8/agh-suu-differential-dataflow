@@ -1,10 +1,10 @@
 package pl.edu.agh.suu.command;
 
 
-public class Result implements Command {
+public class ResultCommand implements Command {
     public final Integer time;
 
-    public Result(Integer time) {
+    public ResultCommand(Integer time) {
         this.time = time;
     }
 

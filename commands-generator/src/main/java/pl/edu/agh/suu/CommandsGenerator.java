@@ -16,12 +16,16 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
 public class CommandsGenerator {
 
     private static final String DATASET = "twitter-2010";
+    private static final String BENCHMARK_FILENAME = "benchmark";
     private static final String LOAD_FILENAME = "load-graph";
-    private static final String BENCHMARK_FILENAME = "test-streaming";
+    private static final String TEST_FILENAME = "test-streaming";
+
+    private static final int CLIENT_BATCH_SIZE = 30;
 
     public static void main(String[] args) throws JSAPException {
         SimpleJSAP jsap = new SimpleJSAP(
@@ -48,8 +52,15 @@ public class CommandsGenerator {
         try {
             generateOffsets(path);
             ImmutableGraph graph = ImmutableGraph.load(path.toString());
-            generateGraphLoadCommands(graph, percent, 0);
-            generateTestPurelyStreamingAnalysisCommands(graph, percent, steps,1);
+
+            Path file = Path.of(BENCHMARK_FILENAME);
+            try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
+                Stream.of(
+                        generateGraphLoadCommands(graph, percent, 0),
+                        generateTestPurelyStreamingAnalysisCommands(graph, percent, steps, 1))
+                    .map(Command::format)
+                    .forEach(writer::println);
+            }
         } catch (IOException | NoSuchMethodException | InstantiationException | InvocationTargetException |
                 JSAPException | IllegalAccessException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -62,8 +73,8 @@ public class CommandsGenerator {
         BVGraph.main(arguments);
     }
 
-    public static void generateGraphLoadCommands(ImmutableGraph graph, int percent, int time) {
-        String filename = String.format("%s-%d", LOAD_FILENAME, percent);
+    public static FileCommand generateGraphLoadCommands(ImmutableGraph graph, int percent, int time) throws IOException {
+        String filename = String.format("%s-%dp", LOAD_FILENAME, percent);
         Path file = Path.of(filename);
         long edgesQuantity = graph.numArcs() / 100 * percent;
 
@@ -79,50 +90,51 @@ public class CommandsGenerator {
                 while ((successorOrdinal = successors.nextInt()) != -1 && edgesQuantity > 0) {
 
                     Edge<Integer> edge = new Edge<>(nodeOrdinal, successorOrdinal);
-                    writer.println(new Add(edge, time).format());
+                    writer.println(new AddCommand(edge, time).format());
 
                     edgesQuantity--;
                 }
                 System.out.printf("%d edges...%n", edgesQuantity);
             }
-            writer.println(new Result(time + 1).format());
-        } catch (IOException e) {
-            e.printStackTrace();
+            writer.println(new ResultCommand(time + 1).format());
         }
+
+        return new FileCommand(filename, CLIENT_BATCH_SIZE);
     }
 
-    public static void generateTestPurelyStreamingAnalysisCommands(ImmutableGraph graph, int percent, int steps, int time) {
-        String filename = String.format("%s-%d-%d", BENCHMARK_FILENAME, percent, steps);
+    public static FileCommand generateTestPurelyStreamingAnalysisCommands(ImmutableGraph graph, int percent, int steps, int time) throws IOException {
+        String filename = String.format("%s-%dp-%ds", TEST_FILENAME, percent, steps);
         Path file = Path.of(filename);
         long edgesQuantity = (graph.numArcs() / 100 * percent) / 1000;
+
         int repetitions = 1000 * percent / 100;
         int batch = repetitions / steps;
 
         System.out.printf("Generating %s, %d edges%n", filename, edgesQuantity * repetitions);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
-            writer.println(new Measure().format());
+            writer.println(new MeasureCommand().format());
             IntStream.range(0, steps)
                     .forEach(step -> {
                         IntStream.range(0, batch)
                                 .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, step + time));
-                        writer.println(new Result(step + time + 1).format());
-                        writer.println(new Measure().format());
+                        writer.println(new ResultCommand(step + time + 1).format());
+                        writer.println(new MeasureCommand().format());
                         System.out.printf("%d step...%n", step);
                     });
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
+        return new FileCommand(filename, CLIENT_BATCH_SIZE);
     }
 
     public static void generateAddRemoveCommands(PrintWriter writer, ImmutableGraph graph, long edgesQuantity, int time) {
         List<Edge<Integer>> edges = generateRandomEdges(graph, edgesQuantity);
         edges.stream()
-                .map(edge -> new Add(edge, time))
+                .map(edge -> new AddCommand(edge, time))
                 .map(Command::format)
                 .forEach(writer::println);
         edges.stream()
-                .map(edge -> new Remove(edge, time))
+                .map(edge -> new RemoveCommand(edge, time))
                 .map(Command::format)
                 .forEach(writer::println);
     }
