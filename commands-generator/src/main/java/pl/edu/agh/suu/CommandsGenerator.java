@@ -107,7 +107,7 @@ public class CommandsGenerator {
         Path file = Path.of(filename);
         long edgesQuantity = (graph.numArcs() / 100 * percent) / 1000;
 
-        int repetitions = 1000 * percent / 100;
+        int repetitions = 1000;
         int batch = repetitions / steps;
 
         System.out.printf("Generating %s, %d edges%n", filename, edgesQuantity * repetitions);
