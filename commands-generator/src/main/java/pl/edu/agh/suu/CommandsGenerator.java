@@ -20,15 +20,20 @@ import java.util.stream.LongStream;
 public class CommandsGenerator {
 
     private static final String DATASET = "twitter-2010";
-    private static final int PERCENT = 1;
+    private static final String LOAD_FILENAME = "load-graph";
+    private static final String BENCHMARK_FILENAME = "test-streaming";
 
     public static void main(String[] args) throws JSAPException {
         SimpleJSAP jsap = new SimpleJSAP(
-                "Commands Genarator for Tegra-like DD benchmarks",
+                "Commands Genarator for Tegra-like DD streaming benchmark",
                 "Access Twitter dataset files to generate benchmark commands",
                 new Parameter[] {
                         new FlaggedOption( "path", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'p', "path",
                                 "Path to dataset files" ),
+                        new FlaggedOption( "steps", JSAP.INTEGER_PARSER, "5", JSAP.REQUIRED, 'n', JSAP.NO_LONGFLAG,
+                                "The number of times to compute graph" ),
+                        new FlaggedOption("percent", JSAP.INTEGER_PARSER, "100", JSAP.REQUIRED, JSAP.NO_SHORTFLAG, "percent",
+                                "The percent of graph to process")
                 }
         );
 
@@ -38,15 +43,13 @@ public class CommandsGenerator {
         }
 
         Path path = Path.of(config.getString("path"), DATASET);
+        int steps = config.getInt("steps");
+        int percent = config.getInt("percent");
         try {
             generateOffsets(path);
             ImmutableGraph graph = ImmutableGraph.load(path.toString());
-
-            generateGraphLoadCommands(graph, 0);
-            generateTestUpdateThroughputCommands(graph, 1);
-            generateTestSnapshotRetrievalLatencyCommands(graph, 1);
-            generateTestPurelyStreamingAnalysisCommands(graph, 1);
-
+            generateGraphLoadCommands(graph, percent, 0);
+            generateTestPurelyStreamingAnalysisCommands(graph, percent, steps,1);
         } catch (IOException | NoSuchMethodException | InstantiationException | InvocationTargetException |
                 JSAPException | IllegalAccessException | ClassNotFoundException e) {
             e.printStackTrace();
@@ -59,11 +62,12 @@ public class CommandsGenerator {
         BVGraph.main(arguments);
     }
 
-    public static void generateGraphLoadCommands(ImmutableGraph graph, int time) {
-        Path file = Path.of("load-graph.cmds");
-        long edgesQuantity = graph.numArcs() / 100 * PERCENT;
+    public static void generateGraphLoadCommands(ImmutableGraph graph, int percent, int time) {
+        String filename = String.format("%s-%d", LOAD_FILENAME, percent);
+        Path file = Path.of(filename);
+        long edgesQuantity = graph.numArcs() / 100 * percent;
 
-        System.out.printf("Generating load-graph, %d edges%n", edgesQuantity);
+        System.out.printf("Generating %s, %d edges%n", filename, edgesQuantity);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             NodeIterator nodes = graph.nodeIterator();
@@ -87,48 +91,14 @@ public class CommandsGenerator {
         }
     }
 
-    public static void generateTestUpdateThroughputCommands(ImmutableGraph graph, int time) {
-        Path file = Path.of("test-throughput.cmds");
-        long edgesQuantity = 1000000 / 100 * PERCENT;
-
-        System.out.printf("Generating test-throughput, %d edges%n", edgesQuantity);
-
-        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
-            writer.println(new Measure().format());
-            generateAddRemoveCommands(writer, graph, edgesQuantity, time);
-            writer.println(new Measure().format());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void generateTestSnapshotRetrievalLatencyCommands(ImmutableGraph graph, int time) {
-        Path file = Path.of("test-retrieval.cmds");
-        long edgesQuantity = 1000000 / 100 * PERCENT;
-        int repetitions = 1000 / 100 * PERCENT;
-
-        System.out.printf("Generating test-throughput, %d edges%n", edgesQuantity * repetitions);
-
-        try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
-            writer.println(new Measure().format());
-            IntStream.range(0, repetitions)
-                    .forEach(i -> generateAddRemoveCommands(writer, graph, edgesQuantity, time));
-            writer.println(new Result(time + 1).format());
-            writer.println(new Measure().format());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void generateTestPurelyStreamingAnalysisCommands(ImmutableGraph graph, int time) {
-        Path file = Path.of("test-streaming.cmds");
-        long edgesQuantity = (graph.numArcs() / 100 * PERCENT) / 1000;
-
-        int repetitions = 1000 / 100 * PERCENT;
-        int steps = 5;
+    public static void generateTestPurelyStreamingAnalysisCommands(ImmutableGraph graph, int percent, int steps, int time) {
+        String filename = String.format("%s-%d-%d", BENCHMARK_FILENAME, percent, steps);
+        Path file = Path.of(filename);
+        long edgesQuantity = (graph.numArcs() / 100 * percent) / 1000;
+        int repetitions = 1000 * percent / 100;
         int batch = repetitions / steps;
 
-        System.out.printf("Generating test-streaming, %d edges%n", edgesQuantity * repetitions);
+        System.out.printf("Generating %s, %d edges%n", filename, edgesQuantity * repetitions);
 
         try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(file))) {
             writer.println(new Measure().format());
