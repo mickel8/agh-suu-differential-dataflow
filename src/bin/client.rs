@@ -13,6 +13,9 @@ fn main() {
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
         let input: Vec<&str> = input.split_whitespace().collect();
+        if input.is_empty() {
+            break
+        }
         if *input.get(0).unwrap() == "f" {
             let path = input.get(1).unwrap();
             let batch: i32 = input.get(2).unwrap().parse().unwrap();
